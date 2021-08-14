@@ -39,8 +39,9 @@ class Stamp:
         return f'Stamp({self.value!r}, {self.name!r})'
 
 
-def compute(found, trace, stamps, goal, cap, num):
+def compute(found, trace, stamps, goal, cap, num, unique=False):
     # found and trace are modified over the course of the recursion.
+    # unique means stamps[0] shouldn't occur more than once, because the stamp before it has exactly twice its value.
     if cap < 0:
         return
     if goal <= 0:
@@ -50,10 +51,16 @@ def compute(found, trace, stamps, goal, cap, num):
     if num <= 0: # and goal > 0; i.e., if this isn't a solution
         return
     for i, stamp in enumerate(stamps):
-        trace.append(stamp)
-        # with the recursive call, exclude more expensive stamps; we already considered them
-        compute(found, trace, stamps[i:], goal - stamp.value, cap - stamp.value, num - 1)
-        trace.pop()
+        if i > 0 or not unique:
+            trace.append(stamp)
+
+            # is the stamp before this one worth exactly twice the value of this one?
+            # if so, this stamp should not occur more than once
+            make_this_unique = i > 0 and stamps[i - 1].value == stamps[i].value * 2
+
+            # with the recursive call, exclude more expensive stamps; we already considered them
+            compute(found, trace, stamps[i:], goal - stamp.value, cap - stamp.value, num - 1, make_this_unique)
+            trace.pop()
     return found
 
 
